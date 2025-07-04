@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>my_site</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr"
+      crossorigin="anonymous"
+    />
+    <link rel="stylesheet" href="/styles/site_style.css" />
+  </head>
+  <body>
+    <header
+      class="navbar navbar-light bg-transparent px-3 position-absolute w-100"
+    >
+      <a href="/home" class="d-flex align-items-center text-decoration-none glowing-text">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="25"
+          height="25"
+          fill="white"
+          class="bi bi-bookmarks-fill me-2"
+          viewBox="0 0 16 16"
+          role="img" aria-label="BookMarks logo"
+        >
+          <path
+            d="M2 4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v11.5a.5.5 0 0 1-.777.416L7 13.101l-4.223 2.815A.5.5 0 0 1 2 15.5z"
+          />
+          <path
+            d="M4.268 1A2 2 0 0 1 6 0h6a2 2 0 0 1 2 2v11.5a.5.5 0 0 1-.777.416L13 13.768V2a1 1 0 0 0-1-1z"
+          />
+        </svg>
+        <span class="fs-4 fw-bold">BookMarks</span>
+      </a>
+      <div class="ms-auto">
+        <a href="/signup" class="btn btn-primary btn-lg ">Sign Up</a>
+      </div>
+    </header>
+    <!-- Title -->
+    <section
+      id="title"
+      class="gradient-background d-flex align-items-center"
+      style="min-height: 100vh"
+    >
+      <div class="hero-overlay"></div>
+
+      <div class="px-4 pt-5 text-center position-relative" style="z-index: 2">
+        <h1 class="display-4 fw-bold text-white">Your Library, Reimagined</h1>
+        <div class="col-lg-6 mx-auto">
+          <p class="lead mb-4 text-white glowing-text " style="font-weight: 400">
+            Dive into a universe of stories. Manage your own private library, or
+            explore curated collections by readers with unique perspectives and
+            favorite genres. Every bookshelf tells a story — what will yours
+            say?
+          </p>
+          <div class="d-grid gap-2 d-sm-flex justify-content-sm-center mb-5">
+            <a href="/login" class="btn btn-primary btn-lg px-4 me-sm-3">
+              Manage Your Collection
+            </a>
+            <a href="/explore" class="btn btn-outline-light btn-lg px-4">
+              Explore
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </body>
+</html>

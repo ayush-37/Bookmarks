@@ -1,0 +1,24 @@
+{
+  "dependencies": {
+    "body-parser": "^2.2.0",
+    "express": "^5.1.0"
+  },
+  "name": "book_notes",
+  "version": "1.0.0",
+  "description": "first project",
+  "main": "script.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ayush-37/Bookmarks.git"
+  },
+  "author": "Ayush Raj",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ayush-37/Bookmarks/issues"
+  },
+  "homepage": "https://github.com/ayush-37/Bookmarks#readme"
+}

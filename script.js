@@ -1,60 +1,28 @@
-document.getElementById("bookForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const form = e.target;
-  const bookData = {
-    title: form.title.value,
-    author: form.author.value,
-    rating: form.rating.value,
-    review: form.review.value,
-    dateRead: form.dateRead.value,
-  };
+// server.js
+import express from "express";
+import path from "path";
+import { fileURLToPath } from "url";
 
-  const response = await fetch("/books", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(bookData),
-  });
+// Convert __dirname in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-  if (response.ok) {
-    form.reset();
-    loadBooks();
-  }
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Serve static files (CSS, images)
+app.use(express.static(path.join(__dirname, "public")));
+
+// Serve homepage
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "views", "my_site.html"));
 });
 
-async function loadBooks(sortBy = "date") {
-  const res = await fetch(`/books?sort=${sortBy}`);
-  const books = await res.json();
+// Optional: other routes like /add
+app.get("/add", (req, res) => {
+  res.sendFile(path.join(__dirname, "views", "add.html"));
+});
 
-  const container = document.getElementById("booksContainer");
-  container.innerHTML = "";
-
-  books.forEach((book) => {
-    const coverUrl = `https://covers.openlibrary.org/b/isbn/${book.isbn || ''}-M.jpg`;
-
-    const div = document.createElement("div");
-    div.className = "book-card";
-    div.innerHTML = `
-      <img src="${coverUrl}" alt="cover" onerror="this.src='https://via.placeholder.com/100x150'" />
-      <div class="info">
-        <h3>${book.title}</h3>
-        <p><strong>Author:</strong> ${book.author}</p>
-        <p><strong>Rating:</strong> ${book.rating}/5</p>
-        <p><strong>Review:</strong> ${book.review}</p>
-        <p><strong>Date Read:</strong> ${new Date(book.date_read).toLocaleDateString()}</p>
-        <button onclick="deleteBook(${book.id})">Delete</button>
-      </div>
-    `;
-    container.appendChild(div);
-  });
-}
-
-async function deleteBook(id) {
-  await fetch(`/books/${id}`, { method: "DELETE" });
-  loadBooks();
-}
-
-function sortBooks(criteria) {
-  loadBooks(criteria);
-}
-
-window.onload = loadBooks;
+app.listen(PORT, () => {
+  console.log(`✅ Server running at http://localhost:${PORT}`);
+});
