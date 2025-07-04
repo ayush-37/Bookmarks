@@ -1,0 +1,72 @@
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: #f0f2f5;
+  color: #333;
+  margin: 0;
+  padding: 0;
+}
+.gradient-background {
+  background: linear-gradient(300deg, #00bfff, #ff4c68, #ef8172);
+  background-size: 180% 180%;
+  animation: gradient-animation 18s ease infinite;
+}
+
+header {
+  background: #000409;
+  color: white;
+  padding: 1rem;
+  text-align: center;
+}
+
+main {
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 1rem;
+}
+
+.add-book-form,
+.book-list,
+.controls {
+  background: white;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+input, textarea, button {
+  display: block;
+  width: 100%;
+  margin-bottom: 0.8rem;
+  padding: 0.5rem;
+  font-size: 1rem;
+}
+
+button {
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+button:hover {
+  background-color: #3a78c2;
+}
+
+.book-card {
+  display: flex;
+  background: #fafafa;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border-left: 4px solid #4a90e2;
+}
+
+.book-card img {
+  width: 100px;
+  margin-right: 1rem;
+}
+
+.book-card .info {
+  flex: 1;
+}

@@ -1,0 +1,71 @@
+/* ===== Global Reset ===== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+body {
+  position: relative;
+  z-index: 0;
+  padding-top: 40px;
+}
+
+/* Make background image grow with body */
+body::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0; /* ensures it stretches till content ends */
+  background-image: url("images/photo-1470549638415-0a0755be0619.avif");
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-color: #000; /* fallback if image doesn't load */
+  opacity: 1;
+  z-index: -1;
+  image-rendering: auto;
+  will-change: transform
+}
+
+/* ===== Header ===== */
+header {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 1000;
+  background-color: transparent;
+}
+
+/* ===== Hero Overlay ===== */
+.hero-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  background-color: rgba(0, 0, 0, 0.2); /* 20% black */
+  z-index: 1;
+}
+
+/* ===== Glowing Text (Hero + Header) ===== */
+.glowing-text {
+  color: white;
+  text-shadow: 0 0 1px #ffffff, 0 0 1px #0d6efd;
+}
+
+/* ===== Optional: Responsive Header Padding ===== */
+@media (max-width: 576px) {
+  body {
+    padding-top: 100px;
+  }
+}
