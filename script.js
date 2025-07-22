@@ -65,8 +65,22 @@ app.use((req, res, next) => {
 app.get("/", (_, res) => res.sendFile(path.join(__dirname, "views", "my_site.html")));
 
 // Signup & Login
-app.get("/signup", (req, res) => res.render("sign_up.ejs"));
+app.get("/signup", (req, res) => {
+  if (!req.isAuthenticated()) {
+    return res.render("sign_up.ejs");
+  }
+  return res.redirect(`/users/${req.user.id}`);
+});
+
 app.get("/login", (req, res) => res.render("signin.ejs"));
+
+app.get("/logout", (req, res) => {
+  req.logout(function (err) {
+    if (err) return next(err);
+    res.redirect("/");
+  });
+});
+
 
 /* ---------- Register Route ---------- */
 app.post("/register", async (req, res, next) => {
@@ -179,13 +193,21 @@ app.get("/explore", async (req, res) => {
     const totalReaders = Number((await pool.query("SELECT COUNT(*) FROM readers")).rows[0].count);
     const totalPages = Math.ceil(totalReaders / limit);
 
-    res.render("explore", { users, currentPage: page, totalPages });
+    res.render("explore", { users, currentPage: page, totalPages, isAuthenticated: req.isAuthenticated(),
+  currentUser: req.user || null, });
   } catch (err) {
     console.error("EXPLORE error:", err);
     res.status(500).send("Server error");
   }
 });
 
+// Session-aware redirect for "Manage My Collection"
+app.get("/my-collection", (req, res) => {
+  if (!req.isAuthenticated()) {
+    return res.redirect("/login");
+  }
+  return res.redirect(`/users/${req.user.id}`);
+});
 /* ---------- User Detail Page ---------- */
 app.get("/users/:id", async (req, res) => {
   try {
@@ -208,6 +230,8 @@ app.get("/users/:id", async (req, res) => {
     res.render("user", { 
   user: { ...reader, books }, 
   isOwner,
+  isAuthenticated: req.isAuthenticated(),
+  currentUser: req.user || null
 });
   } catch (err) {
     console.error("USER route error:", err);

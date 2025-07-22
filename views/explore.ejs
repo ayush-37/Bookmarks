@@ -8,6 +8,10 @@
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+      rel="stylesheet"
+    />
     <style>
       .book-card:hover {
         transform: scale(1.03);
@@ -54,17 +58,28 @@
     </style>
   </head>
   <body class="bg-light text-dark p-4">
-    <!-- Navbar Start -->
+
+    <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm mb-4">
       <div class="container">
-        <a class="navbar-brand fw-bold" href="/">Book Notes</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <a class="navbar-brand fw-bold text-primary" href="/">Book Notes</a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+        >
           <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
           <ul class="navbar-nav ms-auto">
-            <li class="nav-item"><a class="nav-link active" href="/explore">Explore</a></li>
-            <li class="nav-item"><a class="nav-link" href="/about">About</a></li>
+            <li class="nav-item">
+              <a class="nav-link active" href="/explore">Explore</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/about">About</a>
+            </li>
+
             <% if (isAuthenticated) { %>
               <li class="nav-item">
                 <a class="nav-link" href="/users/<%= currentUser.id %>">
@@ -72,14 +87,17 @@
                 </a>
               </li>
             <% } else { %>
-              <li class="nav-item"><a class="nav-link" href="/signup">Sign Up</a></li>
-              <li class="nav-item"><a class="nav-link" href="/login">Login</a></li>
+              <li class="nav-item">
+                <a class="nav-link" href="/signup">Sign Up</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="/login">Login</a>
+              </li>
             <% } %>
           </ul>
         </div>
       </div>
     </nav>
-    <!-- Navbar End -->
 
     <div class="container">
       <% users.forEach(user => { %>
@@ -88,11 +106,13 @@
           <div>
             <h3><%= user.name %></h3>
             <p>
-              <strong>Interests:</strong>
+              <strong>Interests:</strong> 
               <%= user.interests && user.interests.length ? user.interests.join(', ') : 'No interests added yet' %>
             </p>
           </div>
-          <a href="/users/<%= user.id %>" class="btn btn-outline-primary">View&nbsp;Profile</a>
+          <a href="/users/<%= user.id %>" class="btn btn-outline-primary"
+            >View&nbsp;Profile</a
+          >
         </div>
 
         <div class="d-flex flex-wrap gap-4">
@@ -104,22 +124,29 @@
               alt="Cover for <%= book.title %>"
             />
             <div class="book-info">
-              <small><strong><%= book.title %></strong></small><br />
+              <small><strong><%= book.title %></strong></small
+              ><br />
               <small class="text-muted">Reviews: <%= book.reviews %></small>
 
               <% if (book.review_comment) { %>
-              <div class="review-box mt-2 px-2 py-1 bg-light border rounded shadow-sm">
+              <div
+                class="review-box mt-2 px-2 py-1 bg-light border rounded shadow-sm"
+              >
                 <em class="text-muted small">"<%= book.review_comment %>"</em>
               </div>
               <% } %>
             </div>
           </div>
+
           <% }) %>
         </div>
       </div>
       <% }) %>
 
-      <nav aria-label="Page navigation" class="mt-4 d-flex justify-content-center">
+      <nav
+        aria-label="Page navigation"
+        class="mt-4 d-flex justify-content-center"
+      >
         <ul class="pagination">
           <% for (let i = 1; i <= totalPages; i++) { %>
           <li class="page-item <%= i === currentPage ? 'active' : '' %>">
@@ -129,6 +156,7 @@
         </ul>
       </nav>
     </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
   </body>
 </html>

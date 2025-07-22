@@ -1,102 +1,153 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title><%= isOwner ? "My Library" : `${user.name}'s Library` %> - Book Notes</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
-  <style>
-    body { padding-top: 70px; }
-    .fixed-footer {
-      position: fixed;
-      bottom: 0;
-      width: 100%;
-      background: #fff;
-      border-top: 1px solid #ddd;
-      padding: 10px;
-      text-align: center;
-    }
-  </style>
-</head>
-<body>
-  <!-- Navbar -->
-  <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top shadow-sm">
-    <div class="container">
-      <a class="navbar-brand" href="/">Book Notes</a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav ms-auto">
-          <li class="nav-item"><a class="nav-link" href="/explore">Explore</a></li>
-          <li class="nav-item"><a class="nav-link" href="/about">About</a></li>
-          <% if (isAuthenticated) { %>
-            <li class="nav-item">
-              <a class="nav-link" href="/users/<%= user.id %>">
-                <i class="fa fa-user-circle"></i> My Page
-              </a>
-            </li>
-          <% } else { %>
-            <li class="nav-item"><a class="nav-link" href="/signup">Sign Up</a></li>
-            <li class="nav-item"><a class="nav-link" href="/login">Login</a></li>
-          <% } %>
-        </ul>
-      </div>
-    </div>
-  </nav>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= user.name %>'s Library</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      .book-card:hover {
+        transform: scale(1.02);
+        transition: transform 0.2s;
+      }
+      .book-actions {
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        background-color: #fff;
+        border-top: 1px solid #ccc;
+        padding: 10px;
+        text-align: center;
+        box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.1);
+      }
+      .quote-text {
+        font-style: italic;
+        color: #666;
+      }
+    </style>
+  </head>
+  <body class="bg-light">
 
-  <!-- User Info -->
-  <div class="container mt-4">
-    <h2 class="text-center mb-2">
-      <%= isOwner ? "My Library" : `${user.name}'s Library` %>
-    </h2>
-    <p class="text-center text-muted">"A room without books is like a body without a soul."</p>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+  <div class="container">
+    <a class="navbar-brand fw-bold text-primary" href="/">Book Notes</a>
+    <button
+      class="navbar-toggler"
+      type="button"
+      data-bs-toggle="collapse"
+      data-bs-target="#navbarNav"
+    >
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item">
+          <a class="nav-link" href="/explore">Explore</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/about">About</a>
+        </li>
 
-    <% if (isOwner) { %>
-      <!-- Edit Interests Form -->
-      <div class="mb-4 text-center">
-        <form action="/users/<%= user.id %>/interests" method="POST" class="d-inline-block">
-          <label for="interests">My Interests:</label>
-          <input type="text" id="interests" name="interests" class="form-control d-inline-block w-auto" value="<%= user.interests ? user.interests.join(', ') : '' %>">
-          <button type="submit" class="btn btn-primary btn-sm mt-2">Update Interests</button>
-        </form>
-      </div>
-    <% } else { %>
-      <p class="text-center"><strong>Interests:</strong> <%= user.interests && user.interests.length ? user.interests.join(', ') : "No interests shared." %></p>
-    <% } %>
-
-    <!-- Books Section -->
-    <div class="row">
-      <% user.books.forEach(book => { %>
-        <div class="col-md-3 mb-4">
-          <div class="card shadow-sm">
-            <img src="<%= book.thumbnail %>" class="card-img-top" alt="<%= book.title %>">
-            <div class="card-body">
-              <h5 class="card-title"><%= book.title %></h5>
-              <p class="card-text"><%= book.review_comment || 'No review yet.' %></p>
-
-              <% if (isOwner) { %>
-                <div class="d-flex justify-content-between">
-                  <button class="btn btn-sm btn-warning">Edit</button>
-                  <button class="btn btn-sm btn-danger">Delete</button>
-                </div>
-              <% } %>
-            </div>
-          </div>
-        </div>
-      <% }) %>
+        <% if (isAuthenticated) { %>
+          <li class="nav-item">
+            <a class="nav-link" href="/users/<%= currentUser.id %>">
+              <i class="fa fa-user-circle"></i> My Page
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link text-danger" href="/logout">Logout</a>
+          </li>
+        <% } else { %>
+          <li class="nav-item">
+            <a class="nav-link" href="/signup">Sign Up</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/login">Login</a>
+          </li>
+        <% } %>
+      </ul>
     </div>
   </div>
+</nav>
 
-  <% if (isOwner) { %>
-    <!-- Static Footer for Owner Actions -->
-    <div class="fixed-footer">
-      <button class="btn btn-success btn-sm">+ Add Book</button>
-      <a href="/logout" class="btn btn-outline-secondary btn-sm ms-3">Logout</a>
+
+    <!-- User Info -->
+    <div class="container mt-4">
+      <div class="text-center mb-4">
+        <% if (isOwner) { %>
+          <p class="quote-text">
+           Welcome , <%= user.name %>
+        </p>
+         
+  <h2>Books that Define You .</h2>
+<% } else { %>
+  <h2><%= user.name %>'s Library</h2>
+  <p class="quote-text">
+          "A room without books is like a body without a soul."
+        </p>
+<% } %>
+      </div>
+
+      <!-- Interests -->
+      <div class="mb-4 text-center">
+        <p>
+          <strong>Interests:</strong>
+          <%= user.interests && user.interests.length
+            ? user.interests.join(", ")
+            : "No interests added yet" %>
+        </p>
+      </div>
+
+      <!-- Book List -->
+      <div class="row">
+        <% if (user.books && user.books.length > 0) { %>
+          <% user.books.forEach(book => { %>
+            <div class="col-md-3 mb-4">
+              <div class="card book-card shadow-sm">
+                <img
+                  src="<%= book.thumbnail || '/images/default.jpg' %>"
+                  class="card-img-top"
+                  alt="<%= book.title %>"
+                />
+                <div class="card-body">
+                  <h6 class="card-title"><%= book.title %></h6>
+                  <p class="text-muted small">Reviews: <%= book.reviews %></p>
+                  <% if (book.review_comment) { %>
+                    <p class="small text-secondary">
+                      "<%= book.review_comment %>"
+                    </p>
+                  <% } %>
+
+                  <% if (isOwner) { %>
+                    <button class="btn btn-sm btn-outline-primary">Edit</button>
+                    <button class="btn btn-sm btn-outline-danger">Delete</button>
+                  <% } %>
+                </div>
+              </div>
+            </div>
+          <% }) %>
+        <% } else { %>
+          <p class="text-center text-muted">No books added yet.</p>
+        <% } %>
+      </div>
     </div>
-  <% } %>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
-</body>
+    <% if (isOwner) { %>
+      <!-- Sticky Actions for Owner -->
+      <div class="book-actions">
+        <button class="btn btn-success btn-sm">Add Book</button>
+        <button class="btn btn-warning btn-sm">Edit Interests</button>
+      </div>
+    <% } %>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
 </html>
