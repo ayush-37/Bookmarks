@@ -59,6 +59,42 @@ app.use((req, res, next) => {
   next();
 });
 
+/* ---------- Passport Local Strategy ---------- */
+passport.use(
+  new Strategy({ usernameField: "email" }, async (email, password, cb) => {
+    try {
+      const result = await pool.query("SELECT * FROM readers WHERE email = $1", [email]);
+      if (result.rows.length === 0) return cb(null, false, { message: "User not found" });
+
+      const user = result.rows[0];
+      bcrypt.compare(password, user.password, (err, isValid) => {
+        if (err) return cb(err);
+        return isValid ? cb(null, user) : cb(null, false, { message: "Invalid password" });
+      });
+    } catch (error) {
+      return cb(error);
+    }
+  })
+);
+
+passport.serializeUser((user, cb) => cb(null, user.id));
+passport.deserializeUser(async (id, cb) => {
+  try {
+    const result = await pool.query("SELECT * FROM readers WHERE id = $1", [id]);
+    cb(null, result.rows[0]);
+  } catch (err) {
+    cb(err);
+  }
+});
+
+/* ---------- Authentication Middleware ---------- */
+function ensureAuthenticated(req, res, next) {
+  if (req.isAuthenticated && req.isAuthenticated()) {
+    return next();
+  }
+  res.redirect("/login"); // Redirect to login if not authenticated
+}
+
 /* ---------- Routes ---------- */
 
 // Home
@@ -74,13 +110,12 @@ app.get("/signup", (req, res) => {
 
 app.get("/login", (req, res) => res.render("signin.ejs"));
 
-app.get("/logout", (req, res) => {
+app.get("/logout", (req, res, next) => {
   req.logout(function (err) {
     if (err) return next(err);
     res.redirect("/");
   });
 });
-
 
 /* ---------- Register Route ---------- */
 app.post("/register", async (req, res, next) => {
@@ -128,41 +163,6 @@ app.post("/login", (req, res, next) => {
   })(req, res, next);
 });
 
-/* ---------- Passport Local Strategy ---------- */
-passport.use(
-  new Strategy({ usernameField: "email" }, async (email, password, cb) => {
-    try {
-      const result = await pool.query("SELECT * FROM readers WHERE email = $1", [email]);
-      if (result.rows.length === 0) return cb(null, false, { message: "User not found" });
-
-      const user = result.rows[0];
-      bcrypt.compare(password, user.password, (err, isValid) => {
-        if (err) return cb(err);
-        return isValid ? cb(null, user) : cb(null, false, { message: "Invalid password" });
-      });
-    } catch (error) {
-      return cb(error);
-    }
-  })
-);
-
-passport.serializeUser((user, cb) => cb(null, user.id));
-passport.deserializeUser(async (id, cb) => {
-  try {
-    const result = await pool.query("SELECT * FROM readers WHERE id = $1", [id]);
-    cb(null, result.rows[0]);
-  } catch (err) {
-    cb(err);
-  }
-});
-
-/* ---------- Authentication Middleware ---------- */
-function ensureAuth(req, res, next) {
-  if (req.isAuthenticated()) return next();
-  res.redirect("/login");
-}
-
-
 /* ---------- Explore Page ---------- */
 app.get("/explore", async (req, res) => {
   const page = Number(req.query.page) || 1;
@@ -178,11 +178,11 @@ app.get("/explore", async (req, res) => {
       readers.map(async (r) => {
         const books = (
           await pool.query(
-            `SELECT id, title, reviews, google_id, review_comment,
+            `SELECT id, title, rating, google_id, review_comment,
                 CONCAT('https://books.google.com/books/content?id=', google_id,
                        '&printsec=frontcover&img=1&zoom=1&source=gbs_api') AS thumbnail
              FROM books WHERE reader_id = $1
-             ORDER BY reviews DESC LIMIT 4`,
+             ORDER BY rating DESC LIMIT 4`,
             [r.id]
           )
         ).rows;
@@ -193,8 +193,13 @@ app.get("/explore", async (req, res) => {
     const totalReaders = Number((await pool.query("SELECT COUNT(*) FROM readers")).rows[0].count);
     const totalPages = Math.ceil(totalReaders / limit);
 
-    res.render("explore", { users, currentPage: page, totalPages, isAuthenticated: req.isAuthenticated(),
-  currentUser: req.user || null, });
+    res.render("explore", {
+      users,
+      currentPage: page,
+      totalPages,
+      isAuthenticated: req.isAuthenticated(),
+      currentUser: req.user || null,
+    });
   } catch (err) {
     console.error("EXPLORE error:", err);
     res.status(500).send("Server error");
@@ -208,6 +213,7 @@ app.get("/my-collection", (req, res) => {
   }
   return res.redirect(`/users/${req.user.id}`);
 });
+
 /* ---------- User Detail Page ---------- */
 app.get("/users/:id", async (req, res) => {
   try {
@@ -217,49 +223,110 @@ app.get("/users/:id", async (req, res) => {
 
     const books = (
       await pool.query(
-        `SELECT id, title, reviews, google_id,
+        `SELECT id, title, rating, review_comment, google_id,
                 CONCAT('https://books.google.com/books/content?id=', google_id,
                        '&printsec=frontcover&img=1&zoom=1&source=gbs_api') AS thumbnail
          FROM books WHERE reader_id=$1
-         ORDER BY reviews DESC`,
+         ORDER BY rating DESC`,
         [requestedId]
       )
     ).rows;
 
     const isOwner = req.isAuthenticated() && req.user.id === requestedId;
-    res.render("user", { 
-  user: { ...reader, books }, 
-  isOwner,
-  isAuthenticated: req.isAuthenticated(),
-  currentUser: req.user || null
-});
+    res.render("user", {
+      user: { ...reader, books },
+      isOwner,
+      isAuthenticated: req.isAuthenticated(),
+      currentUser: req.user || null,
+    });
   } catch (err) {
     console.error("USER route error:", err);
     res.status(500).send("Database error");
   }
 });
 
-/* ---------- Books CRUD (Authenticated) ---------- */
-app.patch("/books/:id/review", ensureAuth, async (req, res) => {
+/* ---------- Books CRUD ---------- */
+
+/* ADD BOOK */
+app.post("/books/add", ensureAuthenticated, async (req, res) => {
+  let { title, google_id, rating, review_comment } = req.body;
+
+  // sanitize rating
+  rating = Number(rating);
+  if (Number.isNaN(rating) || rating < 0) rating = 0;
+  if (rating > 10) rating = 10;
+
+  // enforce word limit
+  if (review_comment) {
+    const words = review_comment.trim().split(/\s+/);
+    if (words.length > 100) {
+      review_comment = words.slice(0, 100).join(" ");
+    }
+  } else {
+    review_comment = "";
+  }
+
   try {
-    const { review } = req.body;
-    const { id } = req.params;
-    await pool.query("UPDATE books SET review = $1 WHERE id = $2", [review, id]);
-    res.sendStatus(200);
+    await pool.query(
+      `INSERT INTO books (reader_id, title, google_id, rating, review_comment)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [req.user.id, title, google_id, rating, review_comment]
+    );
+    res.redirect(`/users/${req.user.id}`);
   } catch (err) {
-    console.error(err);
-    res.status(500).send("Failed to update review");
+    console.error("ADD BOOK error:", err);
+    res.status(500).send("Failed to add book.");
   }
 });
 
-app.delete("/books/:id", ensureAuth, async (req, res) => {
+/* EDIT BOOK */
+app.post("/books/:id/edit", ensureAuthenticated, async (req, res) => {
+  const { id } = req.params;
+  let { rating, review_comment } = req.body;
+
+  rating = Number(rating);
+  if (Number.isNaN(rating) || rating < 0) rating = 0;
+  if (rating > 10) rating = 10;
+
+  if (review_comment) {
+    const words = review_comment.trim().split(/\s+/);
+    if (words.length > 100) {
+      review_comment = words.slice(0, 100).join(" ");
+    }
+  } else {
+    review_comment = "";
+  }
+
   try {
-    const { id } = req.params;
-    await pool.query("DELETE FROM books WHERE id = $1", [id]);
-    res.sendStatus(200);
+    await pool.query(
+      `UPDATE books
+          SET rating = $1,
+              review_comment = $2
+        WHERE id = $3
+          AND reader_id = $4`,
+      [rating, review_comment, id, req.user.id]
+    );
+    res.redirect(`/users/${req.user.id}`);
   } catch (err) {
-    console.error(err);
-    res.status(500).send("Failed to delete book");
+    console.error("EDIT BOOK error:", err);
+    res.status(500).send("Failed to update book.");
+  }
+});
+
+/* DELETE BOOK */
+app.post("/books/:id/delete", ensureAuthenticated, async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query(
+      `DELETE FROM books
+        WHERE id = $1
+          AND reader_id = $2`,
+      [id, req.user.id]
+    );
+    res.redirect(`/users/${req.user.id}`);
+  } catch (err) {
+    console.error("DELETE BOOK error:", err);
+    res.status(500).send("Failed to delete book.");
   }
 });
 
