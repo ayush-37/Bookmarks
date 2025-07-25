@@ -5,6 +5,10 @@
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 html, body {
   margin: 0;
   padding: 0;
@@ -21,15 +25,18 @@ body {
 /* Make background image grow with body */
 body::before {
   content: "";
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0; /* ensures it stretches till content ends */
+  width: 100%;
+  height: 100vh;
+  /* right: 0;
+  bottom: 0; ensures it stretches till content ends */
   background-image: url("/images/photo-1470549638415-0a0755be0619.avif");
   background-size: cover;
   background-repeat: no-repeat;
   background-position: center;
+  background-attachment: fixed;
   background-color: #000; /* fallback if image doesn't load */
   opacity: 1;
   z-index: -1;
@@ -61,6 +68,34 @@ header {
 .glowing-text {
   color: white;
   text-shadow: 0 0 1px #ffffff, 0 0 1px #0d6efd;
+}
+
+.gradient-text {
+  background: linear-gradient(45deg, black, red);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text; /* For Firefox */
+  text-fill-color: transparent;
+}
+
+.about-text {
+  font-size: 1.1rem;
+  line-height: 1.7;
+  color: #333;
+}
+
+.btn-primary:hover {
+  background-color: #2059d4;
+}
+
+.cta-section h2 {
+  font-weight: 600;
+  color: #333;
+}
+
+.cta-section .btn {
+  font-size: 1.2rem;
+  padding: 0.75rem 2rem;
 }
 
 /* ===== Optional: Responsive Header Padding ===== */

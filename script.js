@@ -113,6 +113,7 @@ app.get("/", (_, res) => res.sendFile(path.join(__dirname, "views", "my_site.htm
 
 // Signup & Login
 app.get("/signup", (req, res) => {
+  console.log("Signup route hit");
   if (!req.isAuthenticated()) {
     return res.render("sign_up.ejs");
   }
