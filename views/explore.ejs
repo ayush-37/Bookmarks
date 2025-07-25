@@ -57,7 +57,7 @@
       }
     </style>
   </head>
-  <body class="bg-light text-dark p-4">
+  <body class="bg-light text-dark ">
 
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm mb-4">
@@ -85,6 +85,7 @@
                 <a class="nav-link" href="/users/<%= currentUser.id %>">
                   <i class="fa fa-user-circle"></i> My Page
                 </a>
+                <li class="nav-item"><a class="nav-link text-danger" href="/logout">Logout</a></li>
               </li>
             <% } else { %>
               <li class="nav-item">

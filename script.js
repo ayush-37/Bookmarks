@@ -7,6 +7,7 @@ import bcrypt from "bcrypt";
 import passport from "passport";
 import session from "express-session";
 import { Strategy } from "passport-local";
+import flash from "connect-flash";
 
 /* ---------- PostgreSQL ---------- */
 const { Pool } = pg;
@@ -94,6 +95,14 @@ function ensureAuthenticated(req, res, next) {
   }
   res.redirect("/login"); // Redirect to login if not authenticated
 }
+
+
+app.use(flash());
+app.use((req, res, next) => {
+  res.locals.messages = req.flash();
+  next();
+});
+
 
 /* ---------- Routes ---------- */
 
@@ -323,12 +332,40 @@ app.post("/books/:id/delete", ensureAuthenticated, async (req, res) => {
           AND reader_id = $2`,
       [id, req.user.id]
     );
+    req.flash("success", "Book Added successfully.");
     res.redirect(`/users/${req.user.id}`);
   } catch (err) {
     console.error("DELETE BOOK error:", err);
     res.status(500).send("Failed to delete book.");
   }
 });
+
+app.post("/users/:id/interests", async (req, res) => {
+  const requestedId = Number(req.params.id);
+
+  if (!req.isAuthenticated() || req.user.id !== requestedId) {
+    return res.status(403).send("Unauthorized");
+  }
+
+  try {
+    // Convert the string to a cleaned-up array
+    const raw = req.body.interests || "";
+    const cleanedInterests = raw
+      .split(",")
+      .map((i) => i.trim())
+      .filter((i) => i.length > 0);
+
+    await pool.query("UPDATE readers SET interests = $1 WHERE id = $2", [cleanedInterests, requestedId]);
+
+    req.flash("success", "Interests updated successfully.");
+    res.redirect(`/users/${requestedId}`);
+  } catch (err) {
+    console.error("Error updating interests:", err);
+    req.flash("error", "Failed to update interests.");
+    res.redirect(`/users/${requestedId}`);
+  }
+});
+
 
 /* ---------- Start Server ---------- */
 app.listen(PORT, () => console.log(`✅ Server running at http://localhost:${PORT}`));
