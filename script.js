@@ -51,6 +51,15 @@ app.use(
   })
 );
 
+app.use(flash());
+
+app.use((req, res, next) => {
+  res.locals.success = req.flash('success');
+  res.locals.error = req.flash('error');
+  next();
+});
+
+
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -95,13 +104,6 @@ function ensureAuthenticated(req, res, next) {
   }
   res.redirect("/login"); // Redirect to login if not authenticated
 }
-
-
-app.use(flash());
-app.use((req, res, next) => {
-  res.locals.messages = req.flash();
-  next();
-});
 
 
 /* ---------- Routes ---------- */
@@ -227,6 +229,9 @@ app.get("/my-collection", (req, res) => {
 app.get("/users/:id", async (req, res) => {
   try {
     const requestedId = Number(req.params.id);
+    if (!req.isAuthenticated()) {
+      return res.redirect("/");
+    }
     const reader = (await pool.query("SELECT * FROM readers WHERE id=$1", [requestedId])).rows[0];
     if (!reader) return res.status(404).send("User not found");
 
@@ -281,6 +286,7 @@ app.post("/books/add", ensureAuthenticated, async (req, res) => {
        VALUES ($1, $2, $3, $4, $5)`,
       [req.user.id, title, google_id, rating, review_comment]
     );
+    req.flash('success', 'Book added successfully!');
     res.redirect(`/users/${req.user.id}`);
   } catch (err) {
     console.error("ADD BOOK error:", err);
@@ -315,6 +321,7 @@ app.post("/books/:id/edit", ensureAuthenticated, async (req, res) => {
           AND reader_id = $4`,
       [rating, review_comment, id, req.user.id]
     );
+    req.flash('success', `Book's review edited successfully!`);
     res.redirect(`/users/${req.user.id}`);
   } catch (err) {
     console.error("EDIT BOOK error:", err);
@@ -332,7 +339,7 @@ app.post("/books/:id/delete", ensureAuthenticated, async (req, res) => {
           AND reader_id = $2`,
       [id, req.user.id]
     );
-    req.flash("success", "Book Added successfully.");
+    req.flash("success", "Book deleted successfully.");
     res.redirect(`/users/${req.user.id}`);
   } catch (err) {
     console.error("DELETE BOOK error:", err);
@@ -340,6 +347,8 @@ app.post("/books/:id/delete", ensureAuthenticated, async (req, res) => {
   }
 });
 
+
+/* Edit Interest */
 app.post("/users/:id/interests", async (req, res) => {
   const requestedId = Number(req.params.id);
 

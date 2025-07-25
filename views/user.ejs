@@ -65,20 +65,36 @@
         box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.1);
         z-index: 1030;
       }
+
+      
     </style>
   </head>
   <body class="bg-light">
-    <% if (messages.success && messages.success.length > 0) { %>
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-      <%= messages.success[0] %>
-      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+   <% if (success && success.length > 0) { %>
+  <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1055;">
+    <div class="toast align-items-center text-bg-success border-0 show" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body">
+          <%= success[0] %>
+        </div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
     </div>
-    <% } %> <% if (messages.error && messages.error.length > 0) { %>
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-      <%= messages.error[0] %>
-      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+<% } %>
+
+<% if (error && error.length > 0) { %>
+  <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1055;">
+    <div class="toast align-items-center text-bg-success border-0 show" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body">
+          <%= error[0] %>
+        </div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
     </div>
-    <% } %>
+  </div>
+<% } %>
 
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
@@ -160,8 +176,7 @@
           <div class="book-info">
             <strong><%= book.title %></strong><br />
             <% if (book.rating != null) { %>
-            <small class="text-muted">Rating: <%= book.rating %>/10</small
-            ><br />
+            <small class="text-muted">Rating: <%= book.rating %>/10</small><br />
             <% } %> <% if (book.review_comment) { %>
             <div class="review-box mt-2">"<%= book.review_comment %>"</div>
             <% } %> <% if (isOwner) { %>
@@ -176,8 +191,9 @@
               </button>
               <form
                 action="/books/<%= book.id %>/delete"
-                method="POST"
-                onsubmit="return confirm('Delete this book?');"
+  method="POST"
+  class="delete-form"
+  data-title="<%= book.title %>"
               >
                 <button type="submit" class="btn btn-sm btn-outline-danger">
                   Delete
@@ -288,8 +304,7 @@
             <!-- Google Books Search -->
             <div class="mb-3">
               <label for="searchQuery" class="form-label"
-                >Search for a book (title or author)</label
-              >
+                >Search for a book (title or author)</label>
               <div class="input-group">
                 <input
                   type="text"
@@ -476,8 +491,7 @@
                 rows="4"
                 placeholder="e.g., fiction, AI, productivity, classics"
               >
-<%= user.interests ? user.interests.join(', ') : '' %></textarea
-              >
+<%= user.interests ? user.interests.join(', ') : '' %></textarea>
             </div>
           </div>
           <div class="modal-footer">
@@ -490,6 +504,48 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+  // Auto-dismiss alerts after 5 seconds (5000 ms)
+  setTimeout(() => {
+    const alerts = document.querySelectorAll('.toast');
+    alerts.forEach(alert => {
+      // Bootstrap 5 fade-out and remove
+      alert.classList.remove('show');
+      alert.classList.add('fade');
+      setTimeout(() => alert.remove(), 500); // remove after fade
+    });
+  }, 2000); 
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+  document.querySelectorAll('.delete-form').forEach(form => {
+    form.addEventListener('submit', function (e) {
+      e.preventDefault(); // Prevent default form submit
+
+      const bookTitle = this.dataset.title || 'this book';
+
+      Swal.fire({
+        title: `Delete "${bookTitle}"?`,
+        text: "This action cannot be undone.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, delete it!',
+        cancelButtonText: 'Cancel',
+        reverseButtons: true,
+        backdrop: true
+      }).then((result) => {
+        if (result.isConfirmed) {
+          form.submit(); // Actually submit the form
+        }
+      });
+    });
+  });
+</script>
+
 
   </body>
 </html>
