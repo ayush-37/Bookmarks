@@ -95,9 +95,23 @@ header {
 
 .cta-section .btn {
   font-size: 1.2rem;
-  padding: 0.75rem 2rem;
+  padding: 0.50rem 2rem;
 }
 
+.cta-section {
+  position: relative;
+  z-index: 2; /* must be higher than background overlays */
+}
+
+.glassmorphism {
+  background: rgba(255, 255, 255, 0.1); /* light transparent white */
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px); /* background blur */
+  -webkit-backdrop-filter: blur(8px); /* Safari support */
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  color: #fff; /* Ensure text is visible on blurred bg */
+}
 /* ===== Optional: Responsive Header Padding ===== */
 @media (max-width: 576px) {
   body {
