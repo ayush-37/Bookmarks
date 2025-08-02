@@ -7,7 +7,10 @@ import bcrypt from "bcrypt";
 import passport from "passport";
 import session from "express-session";
 import { Strategy } from "passport-local";
+import GoogleStrategy from "passport-google-oauth2";
 import flash from "connect-flash";
+import dotenv from "dotenv";
+dotenv.config();
 
 /* ---------- PostgreSQL ---------- */
 const { Pool } = pg;
@@ -27,11 +30,11 @@ app.use(express.json());
 
 /* ---------- PostgreSQL Connection ---------- */
 const pool = new Pool({
-  user: "postgres",
-  host: "localhost",
-  database: "book", // your DB name
-  password: "ayush1537", // your password
-  port: 5432,
+  user: process.env.PG_USER,
+  host: process.env.PG_HOST,
+  database: process.env.PG_DATABASE,
+  password: process.env.PG_PASSWORD,
+  port: process.env.PG_PORT,
 });
 
 /* ---------- View engine & static ---------- */
@@ -42,7 +45,7 @@ app.use(express.static(path.join(__dirname, "public")));
 /* ---------- Starting a Session ---------- */
 app.use(
   session({
-    secret: "AYUSH",
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -69,6 +72,22 @@ app.use((req, res, next) => {
   next();
 });
 
+app.get(
+  "/auth/google",
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
+  })
+);
+
+app.get(
+  "/auth/google/my-collection",
+  passport.authenticate("google", {
+    successRedirect: "/my-collection",
+    failureRedirect: "/login",
+  })
+);
+
+
 /* ---------- Passport Local Strategy ---------- */
 passport.use(
   new Strategy({ usernameField: "email" }, async (email, password, cb) => {
@@ -85,6 +104,43 @@ passport.use(
       return cb(error);
     }
   })
+);
+
+passport.use(
+  "google",
+  new GoogleStrategy(
+    {
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: "http://localhost:3000/auth/google/my-collection",
+      userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo",
+    },
+    async (accessToken, refershToken, profile, cb) => {
+      // console.log(profile);
+      console.log(profile.email);
+      console.log(profile.name);
+      try {
+        console.log(profile.email);
+        console.log(profile.name);
+        const result = await pool.query("SELECT  * FROM readers WHERE email = $1", [
+          profile.email,
+        ]);
+        if (result.rows.length === 0) {
+          const newUser = await pool.query(
+            "INSERT INTO readers (name, email, password) VALUES ($1, $2, $3)",
+            [profile.name.givenName, profile.email, "google"]
+          );
+          console.log("\n\n newuser: \n");
+          console.log(newUser.rows[0]);
+          return cb(null, newUser.rows[0]);
+        } else {
+          return cb(null, result.rows[0]);
+        }
+      } catch (error) {
+        return cb(error);
+      }
+    }
+  )
 );
 
 passport.serializeUser((user, cb) => cb(null, user.id));
