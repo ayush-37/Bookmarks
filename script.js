@@ -9,6 +9,8 @@ import session from "express-session";
 import { Strategy } from "passport-local";
 import GoogleStrategy from "passport-google-oauth2";
 import flash from "connect-flash";
+import crypto from "crypto";
+import { sendResetLink } from "./utils/sendMail.js";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -117,8 +119,8 @@ passport.use(
     },
     async (accessToken, refershToken, profile, cb) => {
       // console.log(profile);
-      console.log(profile.email);
-      console.log(profile.name);
+      // console.log(profile.email);
+      // console.log(profile.name);
       try {
         console.log(profile.email);
         console.log(profile.name);
@@ -150,6 +152,112 @@ passport.deserializeUser(async (id, cb) => {
     cb(null, result.rows[0]);
   } catch (err) {
     cb(err);
+  }
+});
+
+app.get("/forgot-password", (req, res) => {
+  res.render("forgot_password");
+});
+
+
+app.post("/forgot-password", async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).send("Email is required.");
+  }
+
+  try {
+    // 1. Check if email exists in readers table
+    const result = await pool.query("SELECT id FROM readers WHERE email = $1", [email]);
+    if (result.rows.length === 0) {
+      return res.status(404).send("No account found with this email.");
+    }
+
+    const readerId = result.rows[0].id;
+
+    // 2. Generate secure token and expiry
+    const token = crypto.randomBytes(32).toString("hex");
+    const expiry = new Date(Date.now() + 15 * 60 * 1000); // 5 min
+
+    // 3. Store in DB
+    await pool.query(
+      "UPDATE readers SET reset_token = $1, reset_token_expires = $2 WHERE id = $3",
+      [token, expiry, readerId]
+    );
+
+    // 4. Email reset link
+    const resetLink = `http://localhost:3000/reset-password/${token}`;
+    await sendResetLink(email, resetLink);
+
+    // 5. Success response
+    res.render("check_email", { email }); // or redirect to a success EJS page
+  } catch (err) {
+    console.error("Forgot-password error:", err);
+    res.status(500).send("Internal Server Error. Please try again.");
+  }
+});
+
+app.get("/reset-password/:token", async (req, res) => {
+  const { token } = req.params;
+
+  try {
+    const client = await pool.connect();
+
+    const result = await client.query(
+      "SELECT * FROM readers WHERE reset_token = $1 AND reset_token_expires > NOW()",
+      [token]
+    );
+
+    client.release();
+
+    if (result.rows.length === 0) {
+      return res.send("Invalid or expired token.");
+    }
+
+    // Token is valid — render reset form
+    res.render("reset_password", { token });
+
+  } catch (err) {
+    console.error("Error verifying reset token:", err);
+    res.status(500).send("Server error.");
+  }
+});
+
+
+app.post("/reset-password/:token", async (req, res) => {
+  const { token } = req.params;
+  const { password } = req.body;
+
+  if (!password) {
+    return res.status(400).send("Password is required.");
+  }
+
+  try {
+    const result = await pool.query(
+      "SELECT * FROM readers WHERE reset_token = $1 AND reset_token_expiry > NOW()",
+      [token]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(400).send("Invalid or expired token.");
+    }
+
+    const user = result.rows[0];
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Update the password and clear the reset token and expiry
+    await pool.query(
+      "UPDATE readers SET password = $1, reset_token = NULL, reset_token_expiry = NULL WHERE id = $2",
+      [hashedPassword, user.id]
+    );
+
+    res.send("Password successfully reset! You can now log in.");
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Something went wrong.");
   }
 });
 
