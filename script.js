@@ -156,8 +156,9 @@ passport.deserializeUser(async (id, cb) => {
 });
 
 app.get("/forgot-password", (req, res) => {
-  res.render("forgot_password");
+  res.render("forgot_password"); // flash vars already in res.locals
 });
+
 
 
 app.post("/forgot-password", async (req, res) => {
@@ -212,54 +213,74 @@ app.get("/reset-password/:token", async (req, res) => {
     client.release();
 
     if (result.rows.length === 0) {
-      return res.send("Invalid or expired token.");
+      req.flash('error', `Invalid or expired reset link. Please request a new one.`);
+      return res.redirect("/forgot-password");
     }
+
 
     // Token is valid — render reset form
     res.render("reset_password", { token });
 
   } catch (err) {
     console.error("Error verifying reset token:", err);
-    res.status(500).send("Server error.");
+    req.flash('error', `Server error. Please try again.`);
+    res.redirect("/forgot-password");
   }
 });
 
 
 app.post("/reset-password/:token", async (req, res) => {
   const { token } = req.params;
-  const { password } = req.body;
+  const { password, confirmPassword } = req.body;
 
-  if (!password) {
-    return res.status(400).send("Password is required.");
+  if (password !== confirmPassword) {
+    req.flash('error', `Passwords do not match.`);
+    return res.redirect(`/reset-password/${token}`);
   }
 
   try {
     const result = await pool.query(
-      "SELECT * FROM readers WHERE reset_token = $1 AND reset_token_expiry > NOW()",
+      "SELECT * FROM readers WHERE reset_token = $1 AND reset_token_expires > NOW()",
       [token]
     );
 
     if (result.rows.length === 0) {
-      return res.status(400).send("Invalid or expired token.");
+      req.flash('error', `Invalid or expired reset link.`);
+      return res.redirect("/forgot-password");
     }
 
     const user = result.rows[0];
 
-    // Hash the new password
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Update the password and clear the reset token and expiry
     await pool.query(
-      "UPDATE readers SET password = $1, reset_token = NULL, reset_token_expiry = NULL WHERE id = $2",
+      "UPDATE readers SET password = $1, reset_token = NULL, reset_token_expires = NULL WHERE id = $2",
       [hashedPassword, user.id]
     );
 
-    res.send("Password successfully reset! You can now log in.");
+    // Fetch updated user (only needed fields for session)
+    const updatedUser = (await pool.query(
+      "SELECT id, name, email FROM readers WHERE id = $1",
+      [user.id]
+    )).rows[0];
+
+    console.log(updatedUser);
+    // Auto-login
+    req.login(updatedUser, (err) => {
+      if (err) {
+        req.flash('error', `Password reset, but auto-login failed. Please log in manually.`);
+        return res.redirect("/login");
+      }
+      req.flash('success', `Your password has been reset successfully!`);
+      res.redirect(`/users/${updatedUser.id}`);
+    });
+
   } catch (err) {
-    console.error(err);
-    res.status(500).send("Something went wrong.");
+    console.error("Error resetting password:", err);
+    req.flash('error', "Server error. Please try again.");
+    res.redirect("/forgot-password");
   }
 });
+
 
 /* ---------- Authentication Middleware ---------- */
 function ensureAuthenticated(req, res, next) {
@@ -394,9 +415,9 @@ app.get("/my-collection", (req, res) => {
 app.get("/users/:id", async (req, res) => {
   try {
     const requestedId = Number(req.params.id);
-    if (!req.isAuthenticated()) {
-      return res.redirect("/");
-    }
+    // if (!req.isAuthenticated()) {
+    //   return res.redirect("/");
+    // }
     const reader = (await pool.query("SELECT * FROM readers WHERE id=$1", [requestedId])).rows[0];
     if (!reader) return res.status(404).send("User not found");
 
